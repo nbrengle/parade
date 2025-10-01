@@ -1,0 +1,61 @@
+---
+repos:
+    - repo: https://github.com/astral-sh/ruff-pre-commit
+      rev: v0.12.10
+      hooks:
+          - id: ruff-check
+            types_or: [python, pyi]
+            args: [--fix, --select=ALL]
+          - id: ruff-format
+            types_or: [python, pyi]
+
+    - repo: https://github.com/adrienverge/yamllint.git
+      rev: v1.35.1
+      hooks:
+          - id: yamllint
+            args: [--format, parsable, --strict]
+
+    - repo: https://github.com/rhysd/actionlint
+      rev: v1.7.4
+      hooks:
+          - id: actionlint
+
+    - repo: https://github.com/igorshubovych/markdownlint-cli
+      rev: v0.42.0
+      hooks:
+          - id: markdownlint
+            args: [--fix]
+
+    - repo: https://github.com/facebook/pyrefly
+      rev: 0.30.0
+      hooks:
+          - id: pyrefly-typecheck
+
+    - repo: local
+      hooks:
+          - id: mypy
+            name: mypy
+            language: system
+            types_or: [python, pyi]
+            entry: uv run mypy
+
+          - id: pytest
+            name: pytest
+            language: system
+            types: [python]
+            entry: uv run pytest
+            pass_filenames: false
+
+          - id: no-noqa
+            name: Check for noqa comments
+            entry: bash -c '! grep -E "# ?noqa" "$@"' --
+            language: system
+            files: \.py$
+            description: 'Fails if any # noqa comments are found.'
+
+          - id: type-ignore
+            name: Check for type-ignore comments
+            entry: bash -c '! grep -E "# ?type-ignore" "$@"' --
+            language: system
+            files: \.py$
+            description: 'Fails if any # type-ignore comments are found.'
