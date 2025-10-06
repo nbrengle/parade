@@ -94,16 +94,6 @@ class TestFloat:
         slack = Float(Decimal("2.0"))
         assert slack.value == Decimal("2.0")
 
-    def test_zero_float_is_critical(self) -> None:
-        """Test that zero float means activity is critical."""
-        slack = Float(Decimal(0))
-        assert slack.is_critical
-
-    def test_nonzero_float_is_not_critical(self) -> None:
-        """Test that nonzero float means activity is not critical."""
-        slack = Float(Decimal("1.0"))
-        assert not slack.is_critical
-
     def test_negative_float_raises_error(self) -> None:
         """Test that negative float raises ValueError."""
         with pytest.raises(ValueError, match="Duration cannot be negative"):

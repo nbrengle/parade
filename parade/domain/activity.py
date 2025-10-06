@@ -91,11 +91,6 @@ class Float(Duration):
     delaying the project completion date.
     """
 
-    @property
-    def is_critical(self) -> bool:
-        """Check if this activity is on the critical path (zero float)."""
-        return self.value == 0
-
     @classmethod
     def from_duration(cls, duration: Duration) -> Self:
         """Create a Float from a Duration."""
@@ -157,8 +152,8 @@ class ScheduledActivity:
 
     @property
     def is_critical(self) -> bool:
-        """Check if this activity is on the critical path."""
-        return self.total_float.is_critical
+        """Check if this activity is on the critical path (zero float)."""
+        return self.total_float.value == 0
 
     def has_dependency(self, activity_name: ActivityName) -> bool:
         """Check if this activity depends on another activity."""
