@@ -12,7 +12,7 @@ def durations(draw: st.DrawFn) -> Duration:
     """Generate a valid Duration.
 
     Generates positive finite Decimals that match domain constraints.
-    Limits to reasonable range and precision for performance and avoid rounding errors.
+    Limits precision to 3 decimal places for performance and realistic test values.
     """
     value = draw(
         st.decimals(
@@ -20,7 +20,7 @@ def durations(draw: st.DrawFn) -> Duration:
             max_value=Decimal(10000),
             allow_nan=False,
             allow_infinity=False,
-            places=3,  # Limit to 3 decimal places to avoid precision issues
+            places=3,  # Limit precision for performance (without this, tests timeout)
         ),
     )
     return Duration(value)

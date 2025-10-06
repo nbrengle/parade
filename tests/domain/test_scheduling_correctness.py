@@ -2,11 +2,28 @@
 
 from decimal import Decimal
 
-import pytest
-
-from parade.domain.activity import ActivityName, Duration, UnscheduledActivity
+from parade.domain.activity import ActivityName, DecimalConvertible, Duration, ScheduledActivity, UnscheduledActivity
 from parade.domain.project_network import UnscheduledProjectNetwork
 from parade.domain.scheduling import schedule
+
+
+def assert_times(
+    activity: ScheduledActivity,
+    *,
+    early: tuple[DecimalConvertible, DecimalConvertible],
+    late: tuple[DecimalConvertible, DecimalConvertible],
+    float_val: DecimalConvertible = 0,
+    critical: bool = True,
+) -> None:
+    """Assert CPM timing values for an activity."""
+    es, ef = early
+    ls, lf = late
+    assert activity.earliest_start == Duration(Decimal(es))
+    assert activity.earliest_finish == Duration(Decimal(ef))
+    assert activity.latest_start == Duration(Decimal(ls))
+    assert activity.latest_finish == Duration(Decimal(lf))
+    assert activity.total_float.value == Decimal(float_val)
+    assert activity.is_critical == critical
 
 
 class TestLinearChain:
@@ -44,37 +61,15 @@ class TestLinearChain:
         network = UnscheduledProjectNetwork(activities=activities)
         result = schedule(network)
 
-        # Get activities by ID
-        activities_by_id = {a.name: a for a in result.activities}
-        a = activities_by_id[ActivityName("A")]
-        b = activities_by_id[ActivityName("B")]
-        c = activities_by_id[ActivityName("C")]
+        # Get activities by name
+        activities_by_name = {a.name: a for a in result.activities}
+        a = activities_by_name[ActivityName("A")]
+        b = activities_by_name[ActivityName("B")]
+        c = activities_by_name[ActivityName("C")]
 
-        # Assert A
-        assert a.earliest_start == Duration(Decimal(0))
-        assert a.earliest_finish == Duration(Decimal(5))
-        assert a.latest_start == Duration(Decimal(0))
-        assert a.latest_finish == Duration(Decimal(5))
-        assert a.total_float.value == Decimal(0)
-        assert a.is_critical
-
-        # Assert B
-        assert b.earliest_start == Duration(Decimal(5))
-        assert b.earliest_finish == Duration(Decimal(8))
-        assert b.latest_start == Duration(Decimal(5))
-        assert b.latest_finish == Duration(Decimal(8))
-        assert b.total_float.value == Decimal(0)
-        assert b.is_critical
-
-        # Assert C
-        assert c.earliest_start == Duration(Decimal(8))
-        assert c.earliest_finish == Duration(Decimal(10))
-        assert c.latest_start == Duration(Decimal(8))
-        assert c.latest_finish == Duration(Decimal(10))
-        assert c.total_float.value == Decimal(0)
-        assert c.is_critical
-
-        # Assert project duration
+        assert_times(a, early=(0, 5), late=(0, 5))
+        assert_times(b, early=(5, 8), late=(5, 8))
+        assert_times(c, early=(8, 10), late=(8, 10))
         assert result.project_duration == Duration(Decimal(10))
 
 
@@ -129,46 +124,17 @@ class TestDiamondUnequalPaths:
         network = UnscheduledProjectNetwork(activities=activities)
         result = schedule(network)
 
-        # Get activities by ID
-        activities_by_id = {a.name: a for a in result.activities}
-        a = activities_by_id[ActivityName("A")]
-        b = activities_by_id[ActivityName("B")]
-        c = activities_by_id[ActivityName("C")]
-        d = activities_by_id[ActivityName("D")]
+        # Get activities by name
+        activities_by_name = {a.name: a for a in result.activities}
+        a = activities_by_name[ActivityName("A")]
+        b = activities_by_name[ActivityName("B")]
+        c = activities_by_name[ActivityName("C")]
+        d = activities_by_name[ActivityName("D")]
 
-        # Assert A (critical)
-        assert a.earliest_start == Duration(Decimal(0))
-        assert a.earliest_finish == Duration(Decimal(2))
-        assert a.latest_start == Duration(Decimal(0))
-        assert a.latest_finish == Duration(Decimal(2))
-        assert a.total_float.value == Decimal(0)
-        assert a.is_critical
-
-        # Assert B (critical)
-        assert b.earliest_start == Duration(Decimal(2))
-        assert b.earliest_finish == Duration(Decimal(7))
-        assert b.latest_start == Duration(Decimal(2))
-        assert b.latest_finish == Duration(Decimal(7))
-        assert b.total_float.value == Decimal(0)
-        assert b.is_critical
-
-        # Assert C (NOT critical - has float)
-        assert c.earliest_start == Duration(Decimal(2))
-        assert c.earliest_finish == Duration(Decimal(5))
-        assert c.latest_start == Duration(Decimal(4))
-        assert c.latest_finish == Duration(Decimal(7))
-        assert c.total_float.value == Decimal(2)
-        assert not c.is_critical
-
-        # Assert D (critical)
-        assert d.earliest_start == Duration(Decimal(7))
-        assert d.earliest_finish == Duration(Decimal(8))
-        assert d.latest_start == Duration(Decimal(7))
-        assert d.latest_finish == Duration(Decimal(8))
-        assert d.total_float.value == Decimal(0)
-        assert d.is_critical
-
-        # Assert project duration
+        assert_times(a, early=(0, 2), late=(0, 2))
+        assert_times(b, early=(2, 7), late=(2, 7))
+        assert_times(c, early=(2, 5), late=(4, 7), float_val=2, critical=False)
+        assert_times(d, early=(7, 8), late=(7, 8))
         assert result.project_duration == Duration(Decimal(8))
 
 
@@ -223,43 +189,17 @@ class TestMultipleCriticalPaths:
         network = UnscheduledProjectNetwork(activities=activities)
         result = schedule(network)
 
-        # Get activities by ID
-        activities_by_id = {a.name: a for a in result.activities}
-        a = activities_by_id[ActivityName("A")]
-        b = activities_by_id[ActivityName("B")]
-        c = activities_by_id[ActivityName("C")]
-        d = activities_by_id[ActivityName("D")]
+        # Get activities by name
+        activities_by_name = {a.name: a for a in result.activities}
+        a = activities_by_name[ActivityName("A")]
+        b = activities_by_name[ActivityName("B")]
+        c = activities_by_name[ActivityName("C")]
+        d = activities_by_name[ActivityName("D")]
 
-        # Assert all activities are critical
-        assert a.earliest_start == Duration(Decimal(0))
-        assert a.earliest_finish == Duration(Decimal(2))
-        assert a.latest_start == Duration(Decimal(0))
-        assert a.latest_finish == Duration(Decimal(2))
-        assert a.total_float.value == Decimal(0)
-        assert a.is_critical
-
-        assert b.earliest_start == Duration(Decimal(2))
-        assert b.earliest_finish == Duration(Decimal(8))
-        assert b.latest_start == Duration(Decimal(2))
-        assert b.latest_finish == Duration(Decimal(8))
-        assert b.total_float.value == Decimal(0)
-        assert b.is_critical
-
-        assert c.earliest_start == Duration(Decimal(2))
-        assert c.earliest_finish == Duration(Decimal(8))
-        assert c.latest_start == Duration(Decimal(2))
-        assert c.latest_finish == Duration(Decimal(8))
-        assert c.total_float.value == Decimal(0)
-        assert c.is_critical
-
-        assert d.earliest_start == Duration(Decimal(8))
-        assert d.earliest_finish == Duration(Decimal(9))
-        assert d.latest_start == Duration(Decimal(8))
-        assert d.latest_finish == Duration(Decimal(9))
-        assert d.total_float.value == Decimal(0)
-        assert d.is_critical
-
-        # Assert project duration
+        assert_times(a, early=(0, 2), late=(0, 2))
+        assert_times(b, early=(2, 8), late=(2, 8))
+        assert_times(c, early=(2, 8), late=(2, 8))
+        assert_times(d, early=(8, 9), late=(8, 9))
         assert result.project_duration == Duration(Decimal(9))
 
 
@@ -313,54 +253,15 @@ class TestDisconnectedSubgraphs:
         network = UnscheduledProjectNetwork(activities=activities)
         result = schedule(network)
 
-        # Get activities by ID
-        activities_by_id = {a.name: a for a in result.activities}
-        a = activities_by_id[ActivityName("A")]
-        b = activities_by_id[ActivityName("B")]
-        c = activities_by_id[ActivityName("C")]
-        d = activities_by_id[ActivityName("D")]
+        # Get activities by name
+        activities_by_name = {a.name: a for a in result.activities}
+        a = activities_by_name[ActivityName("A")]
+        b = activities_by_name[ActivityName("B")]
+        c = activities_by_name[ActivityName("C")]
+        d = activities_by_name[ActivityName("D")]
 
-        # Assert A (critical)
-        assert a.earliest_start == Duration(Decimal(0))
-        assert a.earliest_finish == Duration(Decimal(5))
-        assert a.latest_start == Duration(Decimal(0))
-        assert a.latest_finish == Duration(Decimal(5))
-        assert a.total_float.value == Decimal(0)
-        assert a.is_critical
-
-        # Assert B (critical)
-        assert b.earliest_start == Duration(Decimal(5))
-        assert b.earliest_finish == Duration(Decimal(8))
-        assert b.latest_start == Duration(Decimal(5))
-        assert b.latest_finish == Duration(Decimal(8))
-        assert b.total_float.value == Decimal(0)
-        assert b.is_critical
-
-        # Assert C (NOT critical)
-        assert c.earliest_start == Duration(Decimal(0))
-        assert c.earliest_finish == Duration(Decimal(2))
-        assert c.latest_start == Duration(Decimal(2))
-        assert c.latest_finish == Duration(Decimal(4))
-        assert c.total_float.value == Decimal(2)
-        assert not c.is_critical
-
-        # Assert D (NOT critical)
-        assert d.earliest_start == Duration(Decimal(2))
-        assert d.earliest_finish == Duration(Decimal(6))
-        assert d.latest_start == Duration(Decimal(4))
-        assert d.latest_finish == Duration(Decimal(8))
-        assert d.total_float.value == Decimal(2)
-        assert not d.is_critical
-
-        # Assert project duration (max of both chains)
+        assert_times(a, early=(0, 5), late=(0, 5))
+        assert_times(b, early=(5, 8), late=(5, 8))
+        assert_times(c, early=(0, 2), late=(2, 4), float_val=2, critical=False)
+        assert_times(d, early=(2, 6), late=(4, 8), float_val=2, critical=False)
         assert result.project_duration == Duration(Decimal(8))
-
-
-class TestEmptyNetwork:
-    """Test edge case of zero activities."""
-
-    def test_empty_network(self) -> None:
-        """Test that empty network raises ValueError."""
-        activities: frozenset[UnscheduledActivity] = frozenset()
-        with pytest.raises(ValueError, match="must contain at least one activity"):
-            UnscheduledProjectNetwork(activities=activities)

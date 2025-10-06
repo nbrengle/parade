@@ -4,6 +4,8 @@ from dataclasses import InitVar, dataclass, field
 from decimal import Decimal
 from typing import Self
 
+type DecimalConvertible = int | str | Decimal
+
 
 @dataclass(frozen=True)
 class ActivityName:
@@ -36,17 +38,25 @@ class Duration:
 
     value: Decimal
 
-    def __post_init__(self) -> None:
-        """Validate duration."""
-        if self.value.is_nan():
+    def __new__(cls, value: DecimalConvertible) -> Self:
+        """Create and validate a Duration, converting the input to Decimal."""
+        # Convert to Decimal if needed
+        decimal_value = Decimal(value) if not isinstance(value, Decimal) else value
+
+        if decimal_value.is_nan():
             msg = "Duration cannot be NaN"
             raise ValueError(msg)
-        if self.value.is_infinite():
+        if decimal_value.is_infinite():
             msg = "Duration cannot be infinite"
             raise ValueError(msg)
-        if self.value < 0:
+        if decimal_value < 0:
             msg = "Duration cannot be negative"
             raise ValueError(msg)
+
+        # Create instance with normalized Decimal value
+        instance = object.__new__(cls)
+        object.__setattr__(instance, "value", decimal_value)
+        return instance
 
     def __add__(self, other: Self) -> "Duration":
         """Add two durations together."""
@@ -74,52 +84,22 @@ class Duration:
 
 
 @dataclass(frozen=True)
-class Float:
+class Float(Duration):
     """Value object representing the slack time available for an activity.
 
     Float is the amount of time an activity can be delayed without
     delaying the project completion date.
     """
 
-    value: Decimal
-
-    def __post_init__(self) -> None:
-        """Validate float."""
-        if self.value.is_nan():
-            msg = "Float cannot be NaN"
-            raise ValueError(msg)
-        if self.value.is_infinite():
-            msg = "Float cannot be infinite"
-            raise ValueError(msg)
-        if self.value < 0:
-            msg = "Float cannot be negative"
-            raise ValueError(msg)
-
-    @classmethod
-    def from_duration(cls, duration: Duration) -> Self:
-        """Create a Float from a Duration."""
-        return cls(duration.value)
-
     @property
     def is_critical(self) -> bool:
         """Check if this activity is on the critical path (zero float)."""
         return self.value == 0
 
-    def __lt__(self, other: Self) -> bool:
-        """Check if this float is less than another."""
-        return self.value < other.value
-
-    def __le__(self, other: Self) -> bool:
-        """Check if this float is less than or equal to another."""
-        return self.value <= other.value
-
-    def __gt__(self, other: Self) -> bool:
-        """Check if this float is greater than another."""
-        return self.value > other.value
-
-    def __ge__(self, other: Self) -> bool:
-        """Check if this float is greater than or equal to another."""
-        return self.value >= other.value
+    @classmethod
+    def from_duration(cls, duration: Duration) -> Self:
+        """Create a Float from a Duration."""
+        return cls(duration.value)
 
 
 @dataclass(frozen=True)

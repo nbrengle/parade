@@ -106,22 +106,22 @@ class TestFloat:
 
     def test_negative_float_raises_error(self) -> None:
         """Test that negative float raises ValueError."""
-        with pytest.raises(ValueError, match="Float cannot be negative"):
+        with pytest.raises(ValueError, match="Duration cannot be negative"):
             Float(Decimal("-1.0"))
 
     def test_nan_float_raises_error(self) -> None:
         """Test that NaN float raises ValueError."""
-        with pytest.raises(ValueError, match="Float cannot be NaN"):
+        with pytest.raises(ValueError, match="Duration cannot be NaN"):
             Float(Decimal("NaN"))
 
     def test_positive_infinity_float_raises_error(self) -> None:
         """Test that positive infinity float raises ValueError."""
-        with pytest.raises(ValueError, match="Float cannot be infinite"):
+        with pytest.raises(ValueError, match="Duration cannot be infinite"):
             Float(Decimal("Infinity"))
 
     def test_negative_infinity_float_raises_error(self) -> None:
         """Test that negative infinity float raises ValueError."""
-        with pytest.raises(ValueError, match="Float cannot be infinite"):
+        with pytest.raises(ValueError, match="Duration cannot be infinite"):
             Float(Decimal("-Infinity"))
 
     def test_float_from_duration(self) -> None:

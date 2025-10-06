@@ -54,11 +54,11 @@ class TestSchedulingProperties:
         """For any activity A depending on B, earliest_start(A) >= earliest_finish(B)."""
         result = schedule(network)
 
-        scheduled_by_id = {activity.name: activity for activity in result.activities}
+        scheduled_by_name = {activity.name: activity for activity in result.activities}
 
         for activity in result.activities:
             for dep_id in activity.dependencies:
-                dep = scheduled_by_id[dep_id]
+                dep = scheduled_by_name[dep_id]
                 assert activity.earliest_start >= dep.earliest_finish, (
                     f"Activity {activity.name.value} starts at {activity.earliest_start} "
                     f"but depends on {dep_id.value} which finishes at {dep.earliest_finish}"
