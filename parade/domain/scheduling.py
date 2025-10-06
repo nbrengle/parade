@@ -27,6 +27,17 @@ class ForwardPassResult:
     project_end: Duration
 
 
+@dataclass(frozen=True)
+class BackwardPassResult:
+    """Result of the backward pass calculation.
+
+    Contains latest start/finish times for all activities.
+    """
+
+    latest_start: dict[ActivityName, Duration]
+    latest_finish: dict[ActivityName, Duration]
+
+
 def schedule(network: UnscheduledProjectNetwork) -> ScheduledProjectNetwork:
     """Calculate the schedule using the Critical Path Method.
 
@@ -40,7 +51,7 @@ def schedule(network: UnscheduledProjectNetwork) -> ScheduledProjectNetwork:
     forward_result = _forward_pass(network, activity_map)
 
     # Backward pass: calculate latest start and finish times
-    latest_start, latest_finish = _backward_pass(network, activity_map, forward_result)
+    backward_result = _backward_pass(network, activity_map, forward_result)
 
     # Create scheduled activities
     scheduled_activities = frozenset(
@@ -50,8 +61,8 @@ def schedule(network: UnscheduledProjectNetwork) -> ScheduledProjectNetwork:
             dependencies=activity.dependencies,
             earliest_start=forward_result.earliest_start[activity.name],
             earliest_finish=forward_result.earliest_finish[activity.name],
-            latest_start=latest_start[activity.name],
-            latest_finish=latest_finish[activity.name],
+            latest_start=backward_result.latest_start[activity.name],
+            latest_finish=backward_result.latest_finish[activity.name],
         )
         for activity in network.activities
     )
@@ -112,7 +123,7 @@ def _backward_pass(
     network: UnscheduledProjectNetwork,
     activity_map: dict[ActivityName, UnscheduledActivity],
     forward_result: ForwardPassResult,
-) -> tuple[dict[ActivityName, Duration], dict[ActivityName, Duration]]:
+) -> BackwardPassResult:
     """Calculate latest start and finish times for all activities.
 
     Args:
@@ -121,7 +132,7 @@ def _backward_pass(
         forward_result: Results from the forward pass.
 
     Returns:
-        Tuple of (latest_start, latest_finish) dictionaries.
+        BackwardPassResult containing latest start/finish times.
     """
     latest_start: dict[ActivityName, Duration] = {}
     latest_finish: dict[ActivityName, Duration] = {}
@@ -159,4 +170,7 @@ def _backward_pass(
     for activity in network.activities:
         calculate_latest(activity.name)
 
-    return latest_start, latest_finish
+    return BackwardPassResult(
+        latest_start=latest_start,
+        latest_finish=latest_finish,
+    )
