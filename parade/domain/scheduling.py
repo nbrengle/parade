@@ -58,7 +58,7 @@ def schedule(network: UnscheduledProjectNetwork) -> ScheduledProjectNetwork:
         ScheduledActivity(
             name=activity.name,
             duration=activity.duration,
-            dependencies=activity.dependencies,
+            depends_on=activity.dependencies,
             earliest_start=forward_result.earliest_start[activity.name],
             earliest_finish=forward_result.earliest_finish[activity.name],
             latest_start=backward_result.latest_start[activity.name],

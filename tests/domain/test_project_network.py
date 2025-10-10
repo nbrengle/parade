@@ -182,7 +182,7 @@ class TestActivityDependencyChecking:
         activity = ScheduledActivity(
             name=ActivityName("A"),
             duration=Duration(Decimal("1.0")),
-            dependencies=frozenset([ActivityName("B"), ActivityName("C")]),
+            depends_on=frozenset([ActivityName("B"), ActivityName("C")]),
             earliest_start=Duration(Decimal(0)),
             earliest_finish=Duration(Decimal("1.0")),
             latest_start=Duration(Decimal("2.0")),

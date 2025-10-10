@@ -97,14 +97,17 @@ class Float(Duration):
         return cls(duration.value)
 
 
-@dataclass(frozen=True)
-class UnscheduledActivity:
-    """Value object representing a project activity before scheduling.
+@dataclass(frozen=True, kw_only=True)
+class Activity:
+    """Base class for all activities with core attributes.
 
-    An unscheduled activity has:
+    All activities have:
     - A unique name for reference
     - A duration (time to complete)
     - Dependencies (other activities that must complete first)
+
+    The depends_on parameter accepts strings or ActivityName objects for convenience,
+    which are automatically converted to ActivityName objects and stored in dependencies.
     """
 
     name: ActivityName
@@ -124,19 +127,24 @@ class UnscheduledActivity:
         return activity_name in self.dependencies
 
 
-@dataclass(frozen=True)
-class ScheduledActivity:
+@dataclass(frozen=True, kw_only=True)
+class UnscheduledActivity(Activity):
+    """Value object representing a project activity before scheduling.
+
+    Inherits all core activity attributes from Activity base class.
+    """
+
+
+@dataclass(frozen=True, kw_only=True)
+class ScheduledActivity(Activity):
     """Value object representing a scheduled activity with calculated timings.
 
-    A scheduled activity includes all unscheduled activity information plus:
+    Includes all core activity attributes plus:
     - Earliest start and finish times (from forward pass)
     - Latest start and finish times (from backward pass)
     - Calculated float
     """
 
-    name: ActivityName
-    duration: Duration
-    dependencies: frozenset[ActivityName]
     earliest_start: Duration
     earliest_finish: Duration
     latest_start: Duration
@@ -154,7 +162,3 @@ class ScheduledActivity:
     def is_critical(self) -> bool:
         """Check if this activity is on the critical path (zero float)."""
         return self.total_float.value == 0
-
-    def has_dependency(self, activity_name: ActivityName) -> bool:
-        """Check if this activity depends on another activity."""
-        return activity_name in self.dependencies
