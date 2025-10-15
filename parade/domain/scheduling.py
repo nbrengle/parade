@@ -83,27 +83,27 @@ def _forward_pass(
     earliest_finish: dict[ActivityName, Duration] = {}
 
     # Process activities in topological order
-    def calculate_earliest(activity_id: ActivityName) -> None:
+    def calculate_earliest(activity_name: ActivityName) -> None:
         """Recursively calculate earliest times."""
-        if activity_id in earliest_start:
+        if activity_name in earliest_start:
             return
 
-        activity = activity_map[activity_id]
+        activity = activity_map[activity_name]
 
         # Calculate earliest start based on dependencies
         if not activity.dependencies:
             # No dependencies - can start at time 0
-            earliest_start[activity_id] = Duration(Decimal(0))
+            earliest_start[activity_name] = Duration(Decimal(0))
         else:
             # Must wait for all dependencies to finish
-            for dep_id in activity.dependencies:
-                calculate_earliest(dep_id)
+            for dependency_name in activity.dependencies:
+                calculate_earliest(dependency_name)
 
-            max_finish = max(earliest_finish[dep_id] for dep_id in activity.dependencies)
-            earliest_start[activity_id] = max_finish
+            max_finish = max(earliest_finish[dependency_name] for dependency_name in activity.dependencies)
+            earliest_start[activity_name] = max_finish
 
         # Earliest finish = earliest start + duration
-        earliest_finish[activity_id] = earliest_start[activity_id] + activity.duration
+        earliest_finish[activity_name] = earliest_start[activity_name] + activity.duration
 
     # Calculate for all activities
     for activity in network.activities:
@@ -128,7 +128,7 @@ def _backward_pass(
 
     Args:
         network: The project network.
-        activity_map: Lookup dictionary for activities by ID.
+        activity_map: Lookup dictionary for activities by name.
         forward_result: Results from the forward pass.
 
     Returns:
@@ -140,31 +140,31 @@ def _backward_pass(
     # Build reverse dependency map (successors)
     successors: dict[ActivityName, set[ActivityName]] = {activity.name: set() for activity in network.activities}
     for activity in network.activities:
-        for dep_id in activity.dependencies:
-            successors[dep_id].add(activity.name)
+        for dependency_name in activity.dependencies:
+            successors[dependency_name].add(activity.name)
 
     # Process activities in reverse topological order
-    def calculate_latest(activity_id: ActivityName) -> None:
+    def calculate_latest(activity_name: ActivityName) -> None:
         """Recursively calculate latest times."""
-        if activity_id in latest_finish:
+        if activity_name in latest_finish:
             return
 
-        activity = activity_map[activity_id]
+        activity = activity_map[activity_name]
 
         # Calculate latest finish based on successors
-        if not successors[activity_id]:
+        if not successors[activity_name]:
             # No successors - must finish by project end
-            latest_finish[activity_id] = forward_result.project_end
+            latest_finish[activity_name] = forward_result.project_end
         else:
             # Must finish before any successor starts
-            for succ_id in successors[activity_id]:
-                calculate_latest(succ_id)
+            for successor_name in successors[activity_name]:
+                calculate_latest(successor_name)
 
-            min_start = min(latest_start[succ_id] for succ_id in successors[activity_id])
-            latest_finish[activity_id] = min_start
+            min_start = min(latest_start[successor_name] for successor_name in successors[activity_name])
+            latest_finish[activity_name] = min_start
 
         # Latest start = latest finish - duration
-        latest_start[activity_id] = latest_finish[activity_id] - activity.duration
+        latest_start[activity_name] = latest_finish[activity_name] - activity.duration
 
     # Calculate for all activities
     for activity in network.activities:
