@@ -22,8 +22,8 @@ class ForwardPassResult:
     Contains earliest start/finish times and the overall project end time.
     """
 
-    earliest_start: dict[ActivityName, Duration]
-    earliest_finish: dict[ActivityName, Duration]
+    earliest_starts: dict[ActivityName, Duration]
+    earliest_finishes: dict[ActivityName, Duration]
     project_end: Duration
 
 
@@ -34,8 +34,8 @@ class BackwardPassResult:
     Contains latest start/finish times for all activities.
     """
 
-    latest_start: dict[ActivityName, Duration]
-    latest_finish: dict[ActivityName, Duration]
+    latest_starts: dict[ActivityName, Duration]
+    latest_finishes: dict[ActivityName, Duration]
 
 
 def schedule(network: UnscheduledProjectNetwork) -> ScheduledProjectNetwork:
@@ -59,10 +59,10 @@ def schedule(network: UnscheduledProjectNetwork) -> ScheduledProjectNetwork:
             name=activity.name,
             duration=activity.duration,
             depends_on=activity.dependencies,
-            earliest_start=forward_result.earliest_start[activity.name],
-            earliest_finish=forward_result.earliest_finish[activity.name],
-            latest_start=backward_result.latest_start[activity.name],
-            latest_finish=backward_result.latest_finish[activity.name],
+            earliest_start=forward_result.earliest_starts[activity.name],
+            earliest_finish=forward_result.earliest_finishes[activity.name],
+            latest_start=backward_result.latest_starts[activity.name],
+            latest_finish=backward_result.latest_finishes[activity.name],
         )
         for activity in network.activities
     )
@@ -113,8 +113,8 @@ def _forward_pass(
     project_end = max(earliest_finishes.values())
 
     return ForwardPassResult(
-        earliest_start=earliest_starts,
-        earliest_finish=earliest_finishes,
+        earliest_starts=earliest_starts,
+        earliest_finishes=earliest_finishes,
         project_end=project_end,
     )
 
@@ -171,6 +171,6 @@ def _backward_pass(
         calculate_latest(activity.name)
 
     return BackwardPassResult(
-        latest_start=latest_starts,
-        latest_finish=latest_finishes,
+        latest_starts=latest_starts,
+        latest_finishes=latest_finishes,
     )
