@@ -79,13 +79,13 @@ def _forward_pass(
     Returns:
         ForwardPassResult containing earliest times and project end.
     """
-    earliest_start: dict[ActivityName, Duration] = {}
-    earliest_finish: dict[ActivityName, Duration] = {}
+    earliest_starts: dict[ActivityName, Duration] = {}
+    earliest_finishes: dict[ActivityName, Duration] = {}
 
     # Process activities in topological order
     def calculate_earliest(activity_name: ActivityName) -> None:
         """Recursively calculate earliest times."""
-        if activity_name in earliest_start:
+        if activity_name in earliest_starts:
             return
 
         activity = activity_map[activity_name]
@@ -93,28 +93,28 @@ def _forward_pass(
         # Calculate earliest start based on dependencies
         if not activity.dependencies:
             # No dependencies - can start at time 0
-            earliest_start[activity_name] = Duration(Decimal(0))
+            earliest_starts[activity_name] = Duration(Decimal(0))
         else:
             # Must wait for all dependencies to finish
             for dependency_name in activity.dependencies:
                 calculate_earliest(dependency_name)
 
-            max_finish = max(earliest_finish[dependency_name] for dependency_name in activity.dependencies)
-            earliest_start[activity_name] = max_finish
+            max_finish = max(earliest_finishes[dependency_name] for dependency_name in activity.dependencies)
+            earliest_starts[activity_name] = max_finish
 
         # Earliest finish = earliest start + duration
-        earliest_finish[activity_name] = earliest_start[activity_name] + activity.duration
+        earliest_finishes[activity_name] = earliest_starts[activity_name] + activity.duration
 
     # Calculate for all activities
     for activity in network.activities:
         calculate_earliest(activity.name)
 
     # Find project completion time
-    project_end = max(earliest_finish.values())
+    project_end = max(earliest_finishes.values())
 
     return ForwardPassResult(
-        earliest_start=earliest_start,
-        earliest_finish=earliest_finish,
+        earliest_start=earliest_starts,
+        earliest_finish=earliest_finishes,
         project_end=project_end,
     )
 
@@ -134,8 +134,8 @@ def _backward_pass(
     Returns:
         BackwardPassResult containing latest start/finish times.
     """
-    latest_start: dict[ActivityName, Duration] = {}
-    latest_finish: dict[ActivityName, Duration] = {}
+    latest_starts: dict[ActivityName, Duration] = {}
+    latest_finishes: dict[ActivityName, Duration] = {}
 
     # Build reverse dependency map (successors)
     successors: dict[ActivityName, set[ActivityName]] = {activity.name: set() for activity in network.activities}
@@ -146,7 +146,7 @@ def _backward_pass(
     # Process activities in reverse topological order
     def calculate_latest(activity_name: ActivityName) -> None:
         """Recursively calculate latest times."""
-        if activity_name in latest_finish:
+        if activity_name in latest_finishes:
             return
 
         activity = activity_map[activity_name]
@@ -154,23 +154,23 @@ def _backward_pass(
         # Calculate latest finish based on successors
         if not successors[activity_name]:
             # No successors - must finish by project end
-            latest_finish[activity_name] = forward_result.project_end
+            latest_finishes[activity_name] = forward_result.project_end
         else:
             # Must finish before any successor starts
             for successor_name in successors[activity_name]:
                 calculate_latest(successor_name)
 
-            min_start = min(latest_start[successor_name] for successor_name in successors[activity_name])
-            latest_finish[activity_name] = min_start
+            min_start = min(latest_starts[successor_name] for successor_name in successors[activity_name])
+            latest_finishes[activity_name] = min_start
 
         # Latest start = latest finish - duration
-        latest_start[activity_name] = latest_finish[activity_name] - activity.duration
+        latest_starts[activity_name] = latest_finishes[activity_name] - activity.duration
 
     # Calculate for all activities
     for activity in network.activities:
         calculate_latest(activity.name)
 
     return BackwardPassResult(
-        latest_start=latest_start,
-        latest_finish=latest_finish,
+        latest_start=latest_starts,
+        latest_finish=latest_finishes,
     )
