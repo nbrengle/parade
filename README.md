@@ -4,7 +4,7 @@ A domain-driven project planning tool built with modern Python development pract
 
 ## Requirements
 
-- Python 3.13+
+- Python 3.14+
 - [uv](https://docs.astral.sh/uv/) package manager
 
 ## Installation
