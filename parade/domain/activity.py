@@ -58,11 +58,11 @@ class Duration:
         object.__setattr__(instance, "value", decimal_value)
         return instance
 
-    def __add__(self, other: Self) -> "Duration":
+    def __add__(self, other: Self) -> Duration:
         """Add two durations together."""
         return Duration(self.value + other.value)
 
-    def __sub__(self, other: Self) -> "Duration":
+    def __sub__(self, other: Self) -> Duration:
         """Subtract one duration from another."""
         return Duration(self.value - other.value)
 
