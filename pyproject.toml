@@ -5,7 +5,9 @@ description = "A domain-driven project planning tool"
 authors = [{name = "Your Name", email = "you@example.com"}]
 readme = "README.md"
 requires-python = ">=3.14"
-dependencies = []
+dependencies = [
+    "punq>=0.7.0",
+]
 
 [project.optional-dependencies]
 dev = [
@@ -32,6 +34,10 @@ warn_unreachable = true
 warn_no_return = true
 check_untyped_defs = true
 show_error_codes = true
+
+[[tool.mypy.overrides]]
+module = "punq"
+ignore_missing_imports = true
 
 [tool.ruff]
 line-length = 120
@@ -63,6 +69,7 @@ omit = [
     "*/venv/*",
     ".venv/*",
     "venv/*",
+    "parade/__main__.py",
 ]
 
 [tool.coverage.report]
