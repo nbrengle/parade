@@ -1,17 +1,30 @@
 """Application layer for formatting project networks into different output formats."""
 
 from collections.abc import Callable
-from enum import StrEnum
+from enum import StrEnum, auto
 from functools import partial
 from typing import Protocol
 
 from parade.domain.project_network import ScheduledProjectNetwork
 
 
+class UnknownOutputFormatError(Exception):
+    """Raised when attempting to format with an unsupported output format."""
+
+    def __init__(self, format_type: OutputFormat) -> None:
+        """Initialize the error with the unknown format.
+
+        Args:
+            format_type: The unsupported output format that was requested.
+        """
+        super().__init__(f"Unknown output format: {format_type}")
+        self.format_type = format_type
+
+
 class OutputFormat(StrEnum):
     """Supported output formats for project networks."""
 
-    JSON = "json"
+    JSON = auto()
 
 
 class ProjectFormatter(Protocol):
@@ -75,8 +88,10 @@ def format_as_using(
         String representation in the specified format.
 
     Raises:
-        KeyError: If the format type is not registered.
+        UnknownOutputFormatError: If the format type is not registered.
     """
+    if format_type not in registry:
+        raise UnknownOutputFormatError(format_type)
     formatter_impl = registry[format_type]
     return formatter_impl.format(network)
 

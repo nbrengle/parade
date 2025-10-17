@@ -5,7 +5,7 @@ from pathlib import Path
 import pytest
 
 from parade.adapters.exporters import FileExporter
-from parade.application.export import ExportDestination, Exporter, export_to_using
+from parade.application.export import ExportDestination, Exporter, UnknownExportDestinationError, export_to_using
 
 
 @pytest.fixture
@@ -18,14 +18,6 @@ def sample_content() -> str:
 def temp_file_path(tmp_path: Path) -> Path:
     """Create a temporary file path for testing."""
     return tmp_path / "test_output.json"
-
-
-@pytest.fixture
-def test_exporter_registry() -> dict[ExportDestination, Exporter]:
-    """Create a test-local exporter registry."""
-    registry: dict[ExportDestination, Exporter] = {}
-    registry[ExportDestination.FILE] = FileExporter()
-    return registry
 
 
 class TestExporterRegistry:
@@ -69,9 +61,11 @@ class TestExportTo:
         sample_content: str,
         tmp_path: Path,
     ) -> None:
-        """Test that exporting to an unregistered destination raises KeyError."""
+        """Test that exporting to an unregistered destination raises UnknownExportDestinationError."""
         # Create an empty registry to test error handling
         empty_registry: dict[ExportDestination, Exporter] = {}
 
-        with pytest.raises(KeyError):
+        with pytest.raises(UnknownExportDestinationError) as exc_info:
             export_to_using(empty_registry, ExportDestination.FILE, sample_content, tmp_path / "test.json")
+
+        assert exc_info.value.destination == ExportDestination.FILE

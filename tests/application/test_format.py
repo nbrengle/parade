@@ -6,7 +6,7 @@ from decimal import Decimal
 import pytest
 
 from parade.adapters.formatters import JSONFormatter
-from parade.application.format import OutputFormat, ProjectFormatter, format_as_using
+from parade.application.format import OutputFormat, ProjectFormatter, UnknownOutputFormatError, format_as_using
 from parade.domain.activity import ActivityName, Duration, ScheduledActivity
 from parade.domain.project_network import ScheduledProjectNetwork
 
@@ -34,14 +34,6 @@ def simple_scheduled_network() -> ScheduledProjectNetwork:
         ),
     ]
     return ScheduledProjectNetwork(activities)
-
-
-@pytest.fixture
-def test_formatter_registry() -> dict[OutputFormat, ProjectFormatter]:
-    """Create a test-local formatter registry."""
-    registry: dict[OutputFormat, ProjectFormatter] = {}
-    registry[OutputFormat.JSON] = JSONFormatter()
-    return registry
 
 
 class TestFormatterRegistry:
@@ -103,9 +95,11 @@ class TestFormatAs:
         self,
         simple_scheduled_network: ScheduledProjectNetwork,
     ) -> None:
-        """Test that formatting with an unregistered format raises KeyError."""
+        """Test that formatting with an unregistered format raises UnknownOutputFormatError."""
         # Create an empty registry to test error handling
         empty_registry: dict[OutputFormat, ProjectFormatter] = {}
 
-        with pytest.raises(KeyError):
+        with pytest.raises(UnknownOutputFormatError) as exc_info:
             format_as_using(empty_registry, OutputFormat.JSON, simple_scheduled_network)
+
+        assert exc_info.value.format_type == OutputFormat.JSON

@@ -1,16 +1,29 @@
 """Application layer for exporting formatted content to different destinations."""
 
 from collections.abc import Callable
-from enum import StrEnum
+from enum import StrEnum, auto
 from functools import partial
 from pathlib import Path
 from typing import Protocol
 
 
+class UnknownExportDestinationError(Exception):
+    """Raised when attempting to export to an unsupported destination."""
+
+    def __init__(self, destination: ExportDestination) -> None:
+        """Initialize the error with the unknown destination.
+
+        Args:
+            destination: The unsupported export destination that was requested.
+        """
+        super().__init__(f"Unknown export destination: {destination}")
+        self.destination = destination
+
+
 class ExportDestination(StrEnum):
     """Supported export destinations for formatted content."""
 
-    FILE = "file"
+    FILE = auto()
 
 
 class Exporter(Protocol):
@@ -77,8 +90,10 @@ def export_to_using(
         String describing where the content was exported.
 
     Raises:
-        KeyError: If the destination is not registered.
+        UnknownExportDestinationError: If the destination is not registered.
     """
+    if destination not in registry:
+        raise UnknownExportDestinationError(destination)
     exporter_impl = registry[destination]
     return exporter_impl.export(content, path)
 
