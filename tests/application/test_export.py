@@ -54,7 +54,7 @@ class TestExportTo:
             test_exporter_registry,
             ExportDestination.FILE,
             sample_content,
-            str(temp_file_path),
+            temp_file_path,
         )
 
         # Verify the file was created
@@ -64,39 +64,14 @@ class TestExportTo:
         # Verify the return value is the absolute path
         assert result_path == str(temp_file_path.absolute())
 
-    def test_export_to_file_with_default_path(
-        self,
-        sample_content: str,
-        tmp_path: Path,
-        monkeypatch: pytest.MonkeyPatch,
-        test_exporter_registry: dict[ExportDestination, Exporter],
-    ) -> None:
-        """Test exporting content to a file with default path."""
-        # Change to temp directory so we don't pollute the workspace
-        monkeypatch.chdir(tmp_path)
-
-        result_path = export_to_using(test_exporter_registry, ExportDestination.FILE, sample_content)
-
-        # Verify the file was created with default name
-        default_file = Path("project.json")
-        assert default_file.exists()
-        assert default_file.read_text(encoding="utf-8") == sample_content
-
-        # Verify the return value
-        assert result_path == str(default_file.absolute())
-
     def test_export_to_unknown_destination_raises_error(
         self,
         sample_content: str,
-        test_exporter_registry: dict[ExportDestination, Exporter],
+        tmp_path: Path,
     ) -> None:
         """Test that exporting to an unregistered destination raises KeyError."""
-
-        # Create a fake destination that's not registered
-        class FakeDestination:
-            """Fake destination enum for testing."""
-
-            CLOUD = "cloud"
+        # Create an empty registry to test error handling
+        empty_registry: dict[ExportDestination, Exporter] = {}
 
         with pytest.raises(KeyError):
-            export_to_using(test_exporter_registry, FakeDestination.CLOUD, sample_content)  # type: ignore[arg-type]
+            export_to_using(empty_registry, ExportDestination.FILE, sample_content, tmp_path / "test.json")

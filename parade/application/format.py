@@ -1,14 +1,14 @@
 """Application layer for formatting project networks into different output formats."""
 
 from collections.abc import Callable
-from enum import Enum
+from enum import StrEnum
 from functools import partial
 from typing import Protocol
 
 from parade.domain.project_network import ScheduledProjectNetwork
 
 
-class OutputFormat(Enum):
+class OutputFormat(StrEnum):
     """Supported output formats for project networks."""
 
     JSON = "json"
@@ -33,7 +33,7 @@ class ProjectFormatter(Protocol):
 formatter_registry: dict[OutputFormat, ProjectFormatter] = {}
 
 
-def formatter(format_type: OutputFormat) -> Callable[[type], type]:
+def formatter(format_type: OutputFormat) -> Callable[[type[ProjectFormatter]], type[ProjectFormatter]]:
     """Decorator to register a formatter for a specific output format.
 
     Args:
@@ -49,7 +49,7 @@ def formatter(format_type: OutputFormat) -> Callable[[type], type]:
                 ...
     """
 
-    def decorator(cls: type) -> type:
+    def decorator(cls: type[ProjectFormatter]) -> type[ProjectFormatter]:
         formatter_registry[format_type] = cls()
         return cls
 

@@ -93,7 +93,7 @@ class TestFormatAndExportIntegration:
             test_exporter_registry,
             ExportDestination.FILE,
             json_content,
-            str(output_path),
+            output_path,
         )
 
         # Verify the file exists and contains valid JSON
@@ -106,47 +106,48 @@ class TestFormatAndExportIntegration:
 
         # Verify the structure
         assert data["project_duration"] == "9"
+        assert isinstance(data["project_duration"], str)
         assert len(data["activities"]) == 4
 
         # Verify critical path activities (A and C)
         activity_a = next(a for a in data["activities"] if a["name"] == "A")
         assert activity_a["is_critical"] is True
         assert activity_a["total_float"] == "0"
+        assert isinstance(activity_a["total_float"], str)
 
         activity_c = next(a for a in data["activities"] if a["name"] == "C")
         assert activity_c["is_critical"] is True
         assert activity_c["total_float"] == "0"
+        assert isinstance(activity_c["total_float"], str)
 
         # Verify non-critical activity (B has float)
         activity_b = next(a for a in data["activities"] if a["name"] == "B")
         assert activity_b["is_critical"] is False
         assert activity_b["total_float"] == "2"
+        assert isinstance(activity_b["total_float"], str)
 
     def test_verb_composition(
         self,
         complex_scheduled_network: ScheduledProjectNetwork,
         tmp_path: Path,
-        monkeypatch: pytest.MonkeyPatch,
         test_formatter_registry: dict[OutputFormat, ProjectFormatter],
         test_exporter_registry: dict[ExportDestination, Exporter],
     ) -> None:
         """Test composing the verbs in a natural workflow."""
-        # Change to temp directory
-        monkeypatch.chdir(tmp_path)
-
         # This is the verb-oriented API in action:
         # 1. Format the network
         formatted = format_as_using(test_formatter_registry, OutputFormat.JSON, complex_scheduled_network)
 
         # 2. Export the formatted content
-        result = export_to_using(test_exporter_registry, ExportDestination.FILE, formatted)
+        output_file = tmp_path / "project.json"
+        result = export_to_using(test_exporter_registry, ExportDestination.FILE, formatted, output_file)
 
         # Verify
-        output_file = Path("project.json")
         assert output_file.exists()
         assert result == str(output_file.absolute())
 
         # Verify content
         data = json.loads(output_file.read_text(encoding="utf-8"))
         assert data["project_duration"] == "9"
+        assert isinstance(data["project_duration"], str)
         assert len(data["activities"]) == 4

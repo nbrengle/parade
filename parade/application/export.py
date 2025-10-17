@@ -1,12 +1,13 @@
 """Application layer for exporting formatted content to different destinations."""
 
 from collections.abc import Callable
-from enum import Enum
+from enum import StrEnum
 from functools import partial
+from pathlib import Path
 from typing import Protocol
 
 
-class ExportDestination(Enum):
+class ExportDestination(StrEnum):
     """Supported export destinations for formatted content."""
 
     FILE = "file"
@@ -15,12 +16,12 @@ class ExportDestination(Enum):
 class Exporter(Protocol):
     """Protocol for exporting formatted content to specific destinations."""
 
-    def export(self, content: str, path: str | None = None) -> str:
+    def export(self, content: str, path: Path) -> str:
         """Export the formatted content to the target destination.
 
         Args:
             content: The formatted content to export.
-            path: Optional path/location for the export. Interpretation depends on destination.
+            path: Path/location for the export. Interpretation depends on destination.
 
         Returns:
             String describing where the content was exported (e.g., file path).
@@ -32,7 +33,7 @@ class Exporter(Protocol):
 exporter_registry: dict[ExportDestination, Exporter] = {}
 
 
-def exporter(destination: ExportDestination) -> Callable[[type], type]:
+def exporter(destination: ExportDestination) -> Callable[[type[Exporter]], type[Exporter]]:
     """Decorator to register an exporter for a specific destination.
 
     Args:
@@ -44,11 +45,11 @@ def exporter(destination: ExportDestination) -> Callable[[type], type]:
     Example:
         @exporter(ExportDestination.FILE)
         class FileExporter:
-            def export(self, content: str, path: str | None = None) -> str:
+            def export(self, content: str, path: Path) -> str:
                 ...
     """
 
-    def decorator(cls: type) -> type:
+    def decorator(cls: type[Exporter]) -> type[Exporter]:
         exporter_registry[destination] = cls()
         return cls
 
@@ -59,7 +60,7 @@ def export_to_using(
     registry: dict[ExportDestination, Exporter],
     destination: ExportDestination,
     content: str,
-    path: str | None = None,
+    path: Path,
 ) -> str:
     """Export formatted content using a specific registry.
 
@@ -70,7 +71,7 @@ def export_to_using(
         registry: The exporter registry to use.
         destination: The target export destination.
         content: The formatted content to export.
-        path: Optional path/location for the export.
+        path: Path/location for the export.
 
     Returns:
         String describing where the content was exported.

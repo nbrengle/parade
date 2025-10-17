@@ -74,36 +74,38 @@ class TestFormatAs:
         assert "project_duration" in data
         assert "activities" in data
         assert data["project_duration"] == "8"
+        assert isinstance(data["project_duration"], str)
         assert len(data["activities"]) == 2
 
         # Verify activity A
         activity_a = next(a for a in data["activities"] if a["name"] == "A")
         assert activity_a["duration"] == "5"
+        assert isinstance(activity_a["duration"], str)
         assert activity_a["dependencies"] == []
         assert activity_a["earliest_start"] == "0"
+        assert isinstance(activity_a["earliest_start"], str)
         assert activity_a["earliest_finish"] == "5"
+        assert isinstance(activity_a["earliest_finish"], str)
         assert activity_a["is_critical"] is True
 
         # Verify activity B
         activity_b = next(a for a in data["activities"] if a["name"] == "B")
         assert activity_b["duration"] == "3"
+        assert isinstance(activity_b["duration"], str)
         assert activity_b["dependencies"] == ["A"]
         assert activity_b["earliest_start"] == "5"
+        assert isinstance(activity_b["earliest_start"], str)
         assert activity_b["earliest_finish"] == "8"
+        assert isinstance(activity_b["earliest_finish"], str)
         assert activity_b["is_critical"] is True
 
     def test_format_as_unknown_format_raises_error(
         self,
         simple_scheduled_network: ScheduledProjectNetwork,
-        test_formatter_registry: dict[OutputFormat, ProjectFormatter],
     ) -> None:
         """Test that formatting with an unregistered format raises KeyError."""
-
-        # Create a new enum value that's not registered
-        class FakeFormat:
-            """Fake format enum for testing."""
-
-            CSV = "csv"
+        # Create an empty registry to test error handling
+        empty_registry: dict[OutputFormat, ProjectFormatter] = {}
 
         with pytest.raises(KeyError):
-            format_as_using(test_formatter_registry, FakeFormat.CSV, simple_scheduled_network)  # type: ignore[arg-type]
+            format_as_using(empty_registry, OutputFormat.JSON, simple_scheduled_network)

@@ -7,22 +7,22 @@ from parade.application.export import ExportDestination, exporter
 
 @exporter(ExportDestination.FILE)
 class FileExporter:
-    """Exporter that writes content to files."""
+    """Exporter that writes content to files.
 
-    def export(self, content: str, path: str | None = None) -> str:
+    Note: Currently only supports string content. In the future, we may need to
+    support other content types (bytes, structured data, etc.) for different
+    export formats.
+    """
+
+    def export(self, content: str, path: Path) -> str:
         """Write content to a file.
 
         Args:
             content: The formatted content to write.
-            path: Optional file path. If not provided, defaults to "project.json".
+            path: File path where content should be written.
 
         Returns:
             The absolute path where the file was written.
         """
-        if path is None:
-            path = "project.json"
-
-        file_path = Path(path)
-        file_path.write_text(content, encoding="utf-8")
-
-        return str(file_path.absolute())
+        path.write_text(content, encoding="utf-8")
+        return str(path.absolute())
