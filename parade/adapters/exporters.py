@@ -1,8 +1,13 @@
 """Exporters for writing formatted content to various destinations."""
 
+import logging
 from pathlib import Path
 
 from parade.application.export import Exporter
+
+__all__ = ["FileExporter", "FileSizeLimitExceededError", "PathTraversalError"]
+
+logger = logging.getLogger(__name__)
 
 
 class PathTraversalError(ValueError):
@@ -90,30 +95,46 @@ class FileExporter(Exporter):
             FileSizeLimitExceededError: If content exceeds max_file_size_bytes.
             OSError: If file operations fail (permission denied, disk full, etc).
         """
+        logger.debug("Starting file export to %s", path)
+
         # Check file size limit before attempting to write
         content_bytes = content.encode("utf-8")
         content_size = len(content_bytes)
 
         if content_size > self.max_file_size_bytes:
+            logger.warning(
+                "File size limit exceeded: %d bytes > %d bytes max",
+                content_size,
+                self.max_file_size_bytes,
+            )
             raise FileSizeLimitExceededError(content_size, self.max_file_size_bytes)
 
         # Resolve to absolute path and validate it's within allowed directory
         absolute_path = path.resolve()
 
         if not absolute_path.is_relative_to(self.allowed_base_dir):
+            logger.warning(
+                "Path traversal attempt blocked: %s outside %s",
+                absolute_path,
+                self.allowed_base_dir,
+            )
             raise PathTraversalError(absolute_path, self.allowed_base_dir)
 
         # Ensure parent directory exists
         absolute_path.parent.mkdir(parents=True, exist_ok=True)
+        logger.debug("Created parent directories for %s", absolute_path)
 
         # Atomic write: write to temp file, then rename
         # This prevents corruption if the process crashes during write
         temp_path = absolute_path.with_suffix(absolute_path.suffix + ".tmp")
 
         try:
+            logger.debug("Writing %d bytes to temporary file %s", content_size, temp_path)
             temp_path.write_bytes(content_bytes)  # Use write_bytes since we already encoded
             temp_path.replace(absolute_path)  # Atomic on POSIX systems
+            logger.info("Successfully exported %d bytes to %s", content_size, absolute_path)
         except OSError:
+            logger.exception("Failed to write file %s", absolute_path)
             # Clean up temp file on any error
             temp_path.unlink(missing_ok=True)
             raise
