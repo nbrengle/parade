@@ -1,9 +1,14 @@
 """Formatters for converting project networks to various output formats."""
 
 import json
+import logging
 
 from parade.application.format import ProjectFormatter
 from parade.domain.project_network import ScheduledProjectNetwork
+
+__all__ = ["JSONFormatter"]
+
+logger = logging.getLogger(__name__)
 
 
 class JSONFormatter(ProjectFormatter):
@@ -18,13 +23,15 @@ class JSONFormatter(ProjectFormatter):
         Returns:
             JSON string representation of the project network.
         """
+        logger.debug("Starting JSON formatting for network with %d activities", len(network.activities))
+
         data = {
             "project_duration": str(network.project_duration.value),
             "activities": [
                 {
                     "name": activity.name.value,
                     "duration": str(activity.duration.value),
-                    "dependencies": sorted(dep.value for dep in activity.dependencies),
+                    "dependencies": [dep.value for dep in activity.dependencies],
                     "earliest_start": str(activity.earliest_start.value),
                     "earliest_finish": str(activity.earliest_finish.value),
                     "latest_start": str(activity.latest_start.value),
@@ -35,4 +42,6 @@ class JSONFormatter(ProjectFormatter):
                 for activity in network.activities
             ],
         }
-        return json.dumps(data, indent=2)
+        result = json.dumps(data, indent=2)
+        logger.info("Formatted network as JSON: %d characters", len(result))
+        return result
