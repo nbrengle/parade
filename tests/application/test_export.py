@@ -20,8 +20,8 @@ def temp_file_path(tmp_path: Path) -> Path:
     return tmp_path / "test_output.json"
 
 
-class TestExportTo:
-    """Tests for export_to verb."""
+class TestFileExporter:
+    """Tests for FileExporter."""
 
     def test_export_to_file(
         self,
@@ -32,8 +32,8 @@ class TestExportTo:
         """Test exporting content to a file."""
         result_path = export_to(
             file_exporter,
-            sample_content,
             temp_file_path,
+            sample_content,
         )
 
         # Verify the file was created
@@ -41,7 +41,7 @@ class TestExportTo:
         assert temp_file_path.read_text(encoding="utf-8") == sample_content
 
         # Verify the return value is the absolute path
-        assert result_path == str(temp_file_path.absolute())
+        assert result_path == temp_file_path.absolute()
 
     def test_export_creates_parent_directories(
         self,
@@ -54,14 +54,14 @@ class TestExportTo:
 
         result_path = export_to(
             file_exporter,
-            sample_content,
             nested_path,
+            sample_content,
         )
 
         # Verify the file and all parent directories were created
         assert nested_path.exists()
         assert nested_path.read_text(encoding="utf-8") == sample_content
-        assert result_path == str(nested_path.absolute())
+        assert result_path == nested_path.absolute()
 
 
 class TestFileExporterSecurity:
@@ -109,27 +109,7 @@ class TestFileExporterSecurity:
 
         assert valid_path.exists()
         assert valid_path.read_text(encoding="utf-8") == sample_content
-        assert result == str(valid_path.absolute())
-
-    def test_defaults_to_current_working_directory(
-        self,
-        sample_content: str,
-        tmp_path: Path,
-        monkeypatch: pytest.MonkeyPatch,
-    ) -> None:
-        """Test that FileExporter defaults to cwd as allowed base directory."""
-        monkeypatch.chdir(tmp_path)
-        exporter = FileExporter()  # No allowed_base_dir specified
-
-        # Should work for files in cwd
-        valid_path = tmp_path / "output.json"
-        exporter.export(sample_content, valid_path)
-        assert valid_path.exists()
-
-        # Should reject paths outside cwd
-        outside_path = tmp_path.parent / "outside.json"
-        with pytest.raises(PathTraversalError):
-            exporter.export(sample_content, outside_path)
+        assert result == valid_path.absolute()
 
     def test_prevents_large_files_with_default_limit(
         self,
@@ -178,17 +158,4 @@ class TestFileExporterSecurity:
 
         assert output_path.exists()
         assert output_path.read_text(encoding="utf-8") == small_content
-        assert result == str(output_path.absolute())
-
-    def test_size_limit_can_be_disabled(
-        self,
-        tmp_path: Path,
-    ) -> None:
-        """Test that size limits can be disabled by setting to None."""
-        exporter = FileExporter(allowed_base_dir=tmp_path, max_file_size_bytes=None)
-
-        # Verify that the size limit is disabled
-        assert exporter.max_file_size_bytes is None
-
-        # Note: We don't actually test writing a 101MB file to keep tests fast,
-        # but the None value means the size check in export() will be skipped
+        assert result == output_path.absolute()

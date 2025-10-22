@@ -15,7 +15,7 @@ class Exporter(ABC):
     """Abstract base class for exporting formatted content to specific destinations."""
 
     @abstractmethod
-    def export(self, content: str, path: Path) -> str:
+    def export(self, content: str, path: Path) -> Path:
         """Export the formatted content to the target destination.
 
         Args:
@@ -23,19 +23,19 @@ class Exporter(ABC):
             path: Path/location for the export. Interpretation depends on destination.
 
         Returns:
-            String describing where the content was exported (e.g., file path).
+            Path where the content was exported.
         """
 
 
-def export_to(exporter: Exporter, content: str, path: Path) -> str:
+def export_to(exporter: Exporter, path: Path, content: str) -> Path:
     """Export formatted content using the provided exporter.
 
     Args:
         exporter: The exporter implementation to use.
-        content: The formatted content to export.
         path: Path/location for the export.
+        content: The formatted content to export.
 
     Returns:
-        String describing where the content was exported.
+        Path where the content was exported.
     """
     return exporter.export(content, path)

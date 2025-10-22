@@ -61,22 +61,20 @@ class FileExporter(Exporter):
 
     def __init__(
         self,
-        allowed_base_dir: Path | None = None,
-        max_file_size_bytes: int | None = DEFAULT_MAX_FILE_SIZE_BYTES,
+        allowed_base_dir: Path,
+        max_file_size_bytes: int = DEFAULT_MAX_FILE_SIZE_BYTES,
     ) -> None:
         """Initialize the file exporter with security constraints.
 
         Args:
             allowed_base_dir: Base directory that all exported files must be within.
-                            Defaults to current working directory if not specified.
                             This prevents path traversal attacks.
             max_file_size_bytes: Maximum allowed file size in bytes. Defaults to 100MB.
-                               Set to None to disable size limits (not recommended).
         """
-        self.allowed_base_dir = (allowed_base_dir or Path.cwd()).resolve()
+        self.allowed_base_dir = allowed_base_dir.resolve()
         self.max_file_size_bytes = max_file_size_bytes
 
-    def export(self, content: str, path: Path) -> str:
+    def export(self, content: str, path: Path) -> Path:
         """Write content to a file with security and reliability safeguards.
 
         Args:
@@ -96,7 +94,7 @@ class FileExporter(Exporter):
         content_bytes = content.encode("utf-8")
         content_size = len(content_bytes)
 
-        if self.max_file_size_bytes is not None and content_size > self.max_file_size_bytes:
+        if content_size > self.max_file_size_bytes:
             raise FileSizeLimitExceededError(content_size, self.max_file_size_bytes)
 
         # Resolve to absolute path and validate it's within allowed directory
@@ -115,9 +113,9 @@ class FileExporter(Exporter):
         try:
             temp_path.write_bytes(content_bytes)  # Use write_bytes since we already encoded
             temp_path.replace(absolute_path)  # Atomic on POSIX systems
-        except Exception:
+        except OSError:
             # Clean up temp file on any error
             temp_path.unlink(missing_ok=True)
             raise
 
-        return str(absolute_path)
+        return absolute_path

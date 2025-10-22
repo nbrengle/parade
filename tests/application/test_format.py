@@ -35,8 +35,8 @@ def simple_scheduled_network() -> ScheduledProjectNetwork:
     return ScheduledProjectNetwork(activities)
 
 
-class TestFormatAs:
-    """Tests for format_as verb."""
+class TestFormatAsJson:
+    """Tests for formatting as JSON."""
 
     def test_format_as_json(
         self,
@@ -53,27 +53,20 @@ class TestFormatAs:
         assert "project_duration" in data
         assert "activities" in data
         assert data["project_duration"] == "8"
-        assert isinstance(data["project_duration"], str)
         assert len(data["activities"]) == 2
 
         # Verify activity A
         activity_a = next(a for a in data["activities"] if a["name"] == "A")
         assert activity_a["duration"] == "5"
-        assert isinstance(activity_a["duration"], str)
         assert activity_a["dependencies"] == []
         assert activity_a["earliest_start"] == "0"
-        assert isinstance(activity_a["earliest_start"], str)
         assert activity_a["earliest_finish"] == "5"
-        assert isinstance(activity_a["earliest_finish"], str)
         assert activity_a["is_critical"] is True
 
         # Verify activity B
         activity_b = next(a for a in data["activities"] if a["name"] == "B")
         assert activity_b["duration"] == "3"
-        assert isinstance(activity_b["duration"], str)
         assert activity_b["dependencies"] == ["A"]
         assert activity_b["earliest_start"] == "5"
-        assert isinstance(activity_b["earliest_start"], str)
         assert activity_b["earliest_finish"] == "8"
-        assert isinstance(activity_b["earliest_finish"], str)
         assert activity_b["is_critical"] is True

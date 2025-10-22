@@ -69,7 +69,6 @@ omit = [
     "*/venv/*",
     ".venv/*",
     "venv/*",
-    "parade/__main__.py",
 ]
 
 [tool.coverage.report]

@@ -32,7 +32,7 @@ class JSONFormatter(ProjectFormatter):
                     "total_float": str(activity.total_float.value),
                     "is_critical": activity.is_critical,
                 }
-                for activity in sorted(network.activities, key=lambda a: a.name.value)
+                for activity in network.activities
             ],
         }
         return json.dumps(data, indent=2)
