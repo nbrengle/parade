@@ -107,32 +107,32 @@ A,,
         csv_content = """activity_name,duration,depends_on
 A,not_a_number,
 """
-        with pytest.raises(ValidationError, match="Invalid duration.*must be a number"):
+        with pytest.raises(ValidationError, match=r"Invalid duration.*must be a number"):
             csv_parser.parse(csv_content)
 
     def test_parse_csv_negative_duration(self, csv_parser: ProjectParser) -> None:
-        """Test that negative duration raises ValidationError."""
+        """Test that negative duration raises ValueError."""
         csv_content = """activity_name,duration,depends_on
 A,-5,
 """
-        with pytest.raises(ValidationError, match="duration"):
+        with pytest.raises(ValueError, match="Duration cannot be negative"):
             csv_parser.parse(csv_content)
 
     def test_parse_csv_circular_dependency(self, csv_parser: ProjectParser) -> None:
-        """Test that circular dependencies raise ValidationError."""
+        """Test that circular dependencies raise ValueError."""
         csv_content = """activity_name,duration,depends_on
 A,5,B
 B,3,A
 """
-        with pytest.raises(ValidationError, match="circular"):
+        with pytest.raises(ValueError, match="circular"):
             csv_parser.parse(csv_content)
 
     def test_parse_csv_missing_dependency(self, csv_parser: ProjectParser) -> None:
-        """Test that missing dependency raises ValidationError."""
+        """Test that missing dependency raises ValueError."""
         csv_content = """activity_name,duration,depends_on
 A,5,B
 """
-        with pytest.raises(ValidationError, match="non-existent"):
+        with pytest.raises(ValueError, match="non-existent"):
             csv_parser.parse(csv_content)
 
     def test_parse_csv_whitespace_handling(self, csv_parser: ProjectParser) -> None:

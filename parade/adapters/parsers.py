@@ -56,8 +56,12 @@ class CSVParser(ProjectParser):
             CSV DictReader instance.
 
         Raises:
-            ParseError: If CSV format is invalid.
+            ParseError: If CSV format is invalid or empty.
         """
+        if not content or not content.strip():
+            msg = "CSV file is empty"
+            raise ParseError(msg)
+
         try:
             return csv.DictReader(StringIO(content))
         except csv.Error as e:
@@ -74,7 +78,7 @@ class CSVParser(ProjectParser):
             ParseError: If headers are missing or incorrect.
         """
         if reader.fieldnames is None:
-            msg = "CSV file is empty or has no headers"
+            msg = "CSV file has no headers"
             raise ParseError(msg)
 
         expected_headers = {"activity_name", "duration", "depends_on"}
@@ -105,19 +109,10 @@ class CSVParser(ProjectParser):
             ValidationError: If no activities found.
         """
         activities: list[UnscheduledActivity] = []
-        line_num = 2  # Account for header line
 
         for row in reader:
-            try:
-                activity = self._parse_activity(row)
-                activities.append(activity)
-            except (ParseError, ValidationError):
-                raise
-            except Exception as e:
-                msg = f"Unexpected error: {e}"
-                raise ParseError(msg, line_num) from e
-
-            line_num += 1
+            activity = self._parse_activity(row)
+            activities.append(activity)
 
         if not activities:
             msg = "No activities found in CSV"
@@ -135,13 +130,9 @@ class CSVParser(ProjectParser):
             An unscheduled project network.
 
         Raises:
-            ValidationError: If network creation fails validation.
+            ValueError: If network creation fails validation.
         """
-        try:
-            return UnscheduledProjectNetwork(activities)
-        except ValueError as e:
-            # Domain-level validation errors
-            raise ValidationError(str(e)) from e
+        return UnscheduledProjectNetwork(activities)
 
     def _parse_activity(self, row: dict[str, str]) -> UnscheduledActivity:
         """Parse a single CSV row into an UnscheduledActivity.
@@ -176,17 +167,15 @@ class CSVParser(ProjectParser):
             Activity name.
 
         Raises:
-            ValidationError: If name is invalid.
+            ValidationError: If name is empty.
+            ValueError: If name is invalid.
         """
         name_str = row["activity_name"].strip()
         if not name_str:
             msg = "Activity name cannot be empty"
             raise ValidationError(msg, "activity_name")
 
-        try:
-            return ActivityName(name_str)
-        except ValueError as e:
-            raise ValidationError(str(e), "activity_name") from e
+        return ActivityName(name_str)
 
     def _parse_duration(self, row: dict[str, str]) -> Duration:
         """Parse duration from row.
@@ -198,7 +187,8 @@ class CSVParser(ProjectParser):
             Duration.
 
         Raises:
-            ValidationError: If duration is invalid.
+            ValidationError: If duration is empty or not a valid number.
+            ValueError: If duration value is invalid (negative, etc).
         """
         duration_str = row["duration"].strip()
         if not duration_str:
@@ -211,10 +201,7 @@ class CSVParser(ProjectParser):
             msg = f"Invalid duration '{duration_str}': must be a number"
             raise ValidationError(msg, "duration") from e
 
-        try:
-            return Duration(duration_decimal)
-        except ValueError as e:
-            raise ValidationError(str(e), "duration") from e
+        return Duration(duration_decimal)
 
     def _parse_dependencies(self, row: dict[str, str]) -> frozenset[ActivityName]:
         """Parse dependencies from row.
@@ -226,7 +213,7 @@ class CSVParser(ProjectParser):
             Frozenset of activity names.
 
         Raises:
-            ValidationError: If dependencies are invalid.
+            ValueError: If dependency names are invalid.
         """
         depends_on_str = row["depends_on"].strip()
         if not depends_on_str:
@@ -234,7 +221,4 @@ class CSVParser(ProjectParser):
 
         # Split on comma and clean up each dependency
         dep_names = [d.strip() for d in depends_on_str.split(",") if d.strip()]
-        try:
-            return frozenset(ActivityName(dep) for dep in dep_names)
-        except ValueError as e:
-            raise ValidationError(str(e), "depends_on") from e
+        return frozenset(ActivityName(dep) for dep in dep_names)
